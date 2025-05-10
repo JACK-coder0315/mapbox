@@ -85,6 +85,3 @@ map.on('load', () => {
 
   console.log('Bike‑lane layers added ✔');
 });
-
-map.moveLayer('bike-bos-2022');
-map.moveLayer('bike-cam');

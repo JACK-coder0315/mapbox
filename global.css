@@ -1,28 +1,22 @@
-/* ===============  基础布局  =============== */
-
-/* 让 <html> 与 <body> 占满视口，高度为 100% */
 html, body {
   height: 100%;
-  margin: 0;          /* 清除默认外边距 */
-  padding: 0;         /* 如需留白可改为 5px 等 */
+  margin: 0;
+  padding: 0;
 }
 
-/* 可选：为全局正文设置字体（地图已脱离文档流，不受影响） */
 body {
   font: 100%/1.5 system-ui, sans-serif;
 }
 
-/* ===============  地图容器  =============== */
 
-/* 让 #map 固定在视口，四边贴 0，实现真正“全屏地图” */
 #map {
-  position: fixed;    /* 脱离文档流，堆叠在最底层 */
-  inset: 0;           /* 等价于 top/right/bottom/left: 0; */
+  position: fixed;   
+  inset: 0;           
   width: 100%;
   height: 100%;
 
-  /* ---- 以下 purely 美化，可按需保留 ---- */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);  /* 柔和阴影 */
-  border-radius: 8px;                        /* 圆角 */
-  overflow: hidden;                          /* 防止圆角外溢 */
+
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+  border-radius: 8px;                   
+  overflow: hidden;             
 }
