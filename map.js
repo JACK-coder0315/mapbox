@@ -1,35 +1,66 @@
 /* --------------------------------------------------------
- * map.js ‑ Boston / Cambridge 自行车道 + Bluebikes 可视化
+ * map.js – Boston / Cambridge Bike Lanes + Bluebikes traffic
  * ------------------------------------------------------ */
 
 /* === 1. 依赖（ESM） =================================== */
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
-console.log('Mapbox GL JS Loaded:', mapboxgl);
+import * as d3   from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
-/* === 2. Mapbox 令牌 ================================== */
-mapboxgl.accessToken = 'pk.eyJ1IjoiamFjazAzMTUiLCJhIjoiY21haTZoNjA3MGsxdTJrcHlsMjZwZjU1aSJ9.bInG4_BU-h6a-eEXGHRDEg';
+mapboxgl.accessToken =
+  'pk.eyJ1IjoiamFjazAzMTUiLCJhIjoiY21haTZoNjA3MGsxdTJrcHlsMjZwZjU1aSJ9.bInG4_BU-h6a-eEXGHRDEg';
 
-/* === 3. 构建地图 ===================================== */
+/* === 2. 小工具函数 ==================================== */
+// 把 Date → 离午夜多少分钟，便于数值比较
+const minutesSinceMidnight = d =>
+  d.getHours()*60 + d.getMinutes();
+
+// 把分钟数格式化成人类可读的 HH:MM AM/PM
+function formatTime(min){
+  return new Date(0,0,0,0,min)
+         .toLocaleTimeString('en-US',{timeStyle:'short'});
+}
+
+// 汇总每个站的出发/到达/总流量
+function computeStationTraffic(stations, trips){
+  const dep = d3.rollup(trips,v=>v.length,d=>d.start_station_id);
+  const arr = d3.rollup(trips,v=>v.length,d=>d.end_station_id);
+
+  return stations.map(st=>{
+    const id = st.short_name;
+    st.departures   = dep.get(id) ?? 0;
+    st.arrivals     = arr.get(id) ?? 0;
+    st.totalTraffic = st.departures + st.arrivals;
+    return st;
+  });
+}
+
+// 根据滑块过滤：离目标时间 ±60 min 内的骑行
+function filterTripsByTime(trips, t){
+  if (t === -1) return trips;          // -1 = 不过滤
+  return trips.filter(trip=>{
+    const s = minutesSinceMidnight(trip.started_at);
+    const e = minutesSinceMidnight(trip.ended_at);
+    return Math.abs(s-t) <= 60 || Math.abs(e-t) <= 60;
+  });
+}
+
+/* === 3. 创建地图 ====================================== */
 const map = new mapboxgl.Map({
   container:'map',
   style   :'mapbox://styles/mapbox/streets-v12',
-  center  :[-71.09415, 42.36027],
-  zoom    :12,
-  minZoom :5,
-  maxZoom :18
+  center  :[-71.09415,42.36027],
+  zoom    :12
 });
 
-/* =============== 4. 图层 ============================== */
-map.on('load', async () => {
+map.on('load', async ()=>{
 
-  /* 4.1 Boston 2022 Bike‑lanes (统一绿色) --------------- */
+  /* 3.1——车道图层（沿用你原来的代码，不再赘述） */
+  /* ---------------------------------------------- */
   map.addSource('bos_lanes_2022',{type:'geojson',data:'data/Existing_Bike_Network_2022.geojson'});
   map.addLayer({
     id:'bike-bos-2022',type:'line',source:'bos_lanes_2022',
     paint:{'line-color':'#32d400','line-width':3,'line-opacity':0.45}
   });
-
-  /* 4.2 Cambridge 车道（彩色） ------------------------- */
   map.addSource('cam_lanes',{type:'geojson',data:'data/cambridge_bike_lanes.geojson'});
   const laneColors={
     'Bike Lane':'#32d400','Separated Bike Lane':'#ff4d4d',
@@ -45,35 +76,100 @@ map.on('load', async () => {
     }
   });
 
-  /* 4.3 Bluebikes 站点 -------------------------------- */
-  const raw=await fetch('data/bluebikes-stations.json').then(r=>r.json());
-  const blueGeo={type:'FeatureCollection',features:raw.data.stations.map(s=>({
-    type:'Feature',
-    geometry:{type:'Point',coordinates:[+s.lon,+s.lat]},
-    properties:{capacity:+s.capacity}
-  }))};
-  map.addSource('bluebikes',{type:'geojson',data:blueGeo});
-  map.addLayer({
-    id:'bluebikes-circle',type:'circle',source:'bluebikes',
-    paint:{
-      'circle-radius':['interpolate',['linear'],['get','capacity'],10,4,40,10,80,16],
-      'circle-color':'#0074D9','circle-opacity':0.85,
-      'circle-stroke-color':'#fff','circle-stroke-width':1
+  /* 3.2——加载Bluebikes站点基础信息 -------------------- */
+  let stations = (await fetch('data/bluebikes-stations.json')
+                    .then(r=>r.json())).data.stations;
+
+  /* 3.3——加载 2024‑03 骑行记录 ----------------------- */
+  let trips = await d3.csv(
+      'data/bluebikes-traffic-2024-03.csv',
+      d=>({
+        ...d,
+        started_at:new Date(d.started_at),
+        ended_at  :new Date(d.ended_at)
+      })
+    );
+
+  /* 3.4——SVG 覆盖层，专门放站点圆点 ------------------ */
+  const svg = d3.select(map.getCanvasContainer())
+                .append('svg')
+                  .style('position','absolute')
+                  .style('inset',0)
+                  .style('pointer-events','none');
+
+  /* 3.5——初次计算各站点流量 -------------------------- */
+  stations = computeStationTraffic(stations,trips);
+
+  // 用平方根比例尺保证“圆面积”≈流量
+  const radiusScale = d3.scaleSqrt()
+        .domain([0,d3.max(stations,d=>d.totalTraffic)])
+        .range([0,25]);
+
+  const project = p => map.project(p);   // 经纬度→像素
+
+  // 建立并渲染圆点
+  const circles = svg.selectAll('circle')
+      .data(stations,d=>d.short_name)
+      .enter().append('circle')
+        .attr('r',d=>radiusScale(d.totalTraffic))
+        .each(function(d){               // 原生 tooltip
+          d3.select(this)
+            .append('title')
+            .text(`${d.totalTraffic} 次 (${d.departures} 出 • ${d.arrivals} 入)`);
+        });
+
+  // 地图平移/缩放时，更新圆点位置
+  function reproject(){
+    circles
+      .attr('cx',d=>project([+d.lon,+d.lat]).x)
+      .attr('cy',d=>project([+d.lon,+d.lat]).y);
+  }
+  reproject();
+  map.on('move zoom resize',reproject);
+
+  /* === 4. 滑块逻辑 =================================== */
+  const slider       = document.getElementById('time-slider');
+  const timeOut      = document.getElementById('selected-time');
+  const anyTimeLabel = document.getElementById('any-time');
+
+  slider.addEventListener('input',onSlider);
+  onSlider();             // 页面加载完就先跑一次
+
+  function onSlider(){
+    const val = +slider.value;
+    if (val === -1){
+      timeOut.textContent='';
+      anyTimeLabel.style.display='block';
+    }else{
+      timeOut.textContent = formatTime(val);
+      anyTimeLabel.style.display='none';
     }
-  });
+    updateCircles(val);
+  }
 
-  console.log('✅ layers added');
+  // 重新统计 & 画圆
+  function updateCircles(tFilter){
+    const tripsFiltered = filterTripsByTime(trips,tFilter);
+    const statsFiltered = computeStationTraffic(stations,tripsFiltered);
+
+    // 若过滤后流量普遍很小，就把最大半径放大一点
+    tFilter === -1
+      ? radiusScale.range([0,25])
+      : radiusScale.range([3,50]);
+
+    circles
+      .data(statsFiltered,d=>d.short_name)
+      .attr('r',d=>radiusScale(d.totalTraffic))
+      .select('title')
+      .text(d=>`${d.totalTraffic} 次 (${d.departures} 出 • ${d.arrivals} 入)`);
+  }
 });
 
-/* =============== 5. 图层显隐开关 ===================== */
-['bos','cam','blue'].forEach(([abbr,layer])=>{
-  /* 这里只是为了书写简洁，真正执行请用下面单独写出的三行 👇 */
-});
-function toggle(chkId,layerId){
-  document.getElementById(chkId).addEventListener('change',e=>{
-    map.setLayoutProperty(layerId,'visibility',e.target.checked?'visible':'none');
+/* === 5. DOM→Map 图层显隐开关保持原样即可 ============ */
+['chk-bos','chk-cam','chk-blue'].forEach((id,i)=>{
+  const layer = ['bike-bos-2022','bike-cam',''][i];   // 蓝点已换成 D3，不用隐藏
+  if(!layer) return;
+  document.getElementById(id).addEventListener('change',e=>{
+    map.setLayoutProperty(layer,'visibility',e.target.checked?'visible':'none');
   });
-}
-toggle('chk-bos','bike-bos-2022');
-toggle('chk-cam','bike-cam');
-toggle('chk-blue','bluebikes-circle');
+});
