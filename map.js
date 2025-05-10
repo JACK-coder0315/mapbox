@@ -10,18 +10,14 @@ mapboxgl.accessToken =
   'pk.eyJ1IjoiamFjazAzMTUiLCJhIjoiY21haTZoNjA3MGsxdTJrcHlsMjZwZjU1aSJ9.bInG4_BU-h6a-eEXGHRDEg';
 
 /* === 2. 小工具函数 ==================================== */
-// 把 Date → 离午夜多少分钟，便于数值比较
-const minutesSinceMidnight = d =>
-  d.getHours()*60 + d.getMinutes();
+const minutesSinceMidnight = d => d.getHours()*60 + d.getMinutes();
 
-// 把分钟数格式化成人类可读的 HH:MM AM/PM
-function formatTime(min){
+function formatTime(min){           // 480 → "8:00 AM"
   return new Date(0,0,0,0,min)
          .toLocaleTimeString('en-US',{timeStyle:'short'});
 }
 
-// 汇总每个站的出发/到达/总流量
-function computeStationTraffic(stations, trips){
+function computeStationTraffic(stations,trips){
   const dep = d3.rollup(trips,v=>v.length,d=>d.start_station_id);
   const arr = d3.rollup(trips,v=>v.length,d=>d.end_station_id);
 
@@ -34,13 +30,12 @@ function computeStationTraffic(stations, trips){
   });
 }
 
-// 根据滑块过滤：离目标时间 ±60 min 内的骑行
-function filterTripsByTime(trips, t){
-  if (t === -1) return trips;          // -1 = 不过滤
+function filterTripsByTime(trips,t){
+  if (t===-1) return trips;      // -1 = 不过滤
   return trips.filter(trip=>{
     const s = minutesSinceMidnight(trip.started_at);
     const e = minutesSinceMidnight(trip.ended_at);
-    return Math.abs(s-t) <= 60 || Math.abs(e-t) <= 60;
+    return Math.abs(s-t)<=60 || Math.abs(e-t)<=60;
   });
 }
 
@@ -54,13 +49,13 @@ const map = new mapboxgl.Map({
 
 map.on('load', async ()=>{
 
-  /* 3.1——车道图层（沿用你原来的代码，不再赘述） */
-  /* ---------------------------------------------- */
+  /* ---- 3.1 车道（保持和之前一致） ------------------- */
   map.addSource('bos_lanes_2022',{type:'geojson',data:'data/Existing_Bike_Network_2022.geojson'});
   map.addLayer({
     id:'bike-bos-2022',type:'line',source:'bos_lanes_2022',
     paint:{'line-color':'#32d400','line-width':3,'line-opacity':0.45}
   });
+
   map.addSource('cam_lanes',{type:'geojson',data:'data/cambridge_bike_lanes.geojson'});
   const laneColors={
     'Bike Lane':'#32d400','Separated Bike Lane':'#ff4d4d',
@@ -76,11 +71,10 @@ map.on('load', async ()=>{
     }
   });
 
-  /* 3.2——加载Bluebikes站点基础信息 -------------------- */
+  /* ---- 3.2 Bluebikes 站点 & 骑行数据 ---------------- */
   let stations = (await fetch('data/bluebikes-stations.json')
                     .then(r=>r.json())).data.stations;
 
-  /* 3.3——加载 2024‑03 骑行记录 ----------------------- */
   let trips = await d3.csv(
       'data/bluebikes-traffic-2024-03.csv',
       d=>({
@@ -90,35 +84,32 @@ map.on('load', async ()=>{
       })
     );
 
-  /* 3.4——SVG 覆盖层，专门放站点圆点 ------------------ */
+  /* ---- 3.3 SVG 覆盖层放圆点 ------------------------- */
   const svg = d3.select(map.getCanvasContainer())
                 .append('svg')
                   .style('position','absolute')
                   .style('inset',0)
-                  .style('pointer-events','none');
+                  .style('pointer-events','none');   // 整个 SVG 也不抢事件
 
-  /* 3.5——初次计算各站点流量 -------------------------- */
+  /* ---- 3.4 初次计算 & 绘制 --------------------------- */
   stations = computeStationTraffic(stations,trips);
 
-  // 用平方根比例尺保证“圆面积”≈流量
   const radiusScale = d3.scaleSqrt()
         .domain([0,d3.max(stations,d=>d.totalTraffic)])
-        .range([0,25]);
+        .range([2,25]);               // 最小 2px，最大 25px
 
-  const project = p => map.project(p);   // 经纬度→像素
+  const project = p => map.project(p);
 
-  // 建立并渲染圆点
   const circles = svg.selectAll('circle')
       .data(stations,d=>d.short_name)
       .enter().append('circle')
         .attr('r',d=>radiusScale(d.totalTraffic))
-        .each(function(d){               // 原生 tooltip
+        .each(function(d){
           d3.select(this)
             .append('title')
             .text(`${d.totalTraffic} 次 (${d.departures} 出 • ${d.arrivals} 入)`);
         });
 
-  // 地图平移/缩放时，更新圆点位置
   function reproject(){
     circles
       .attr('cx',d=>project([+d.lon,+d.lat]).x)
@@ -127,17 +118,17 @@ map.on('load', async ()=>{
   reproject();
   map.on('move zoom resize',reproject);
 
-  /* === 4. 滑块逻辑 =================================== */
+  /* === 4. 滑块交互 =================================== */
   const slider       = document.getElementById('time-slider');
   const timeOut      = document.getElementById('selected-time');
   const anyTimeLabel = document.getElementById('any-time');
 
   slider.addEventListener('input',onSlider);
-  onSlider();             // 页面加载完就先跑一次
+  onSlider();   // 初始化
 
   function onSlider(){
     const val = +slider.value;
-    if (val === -1){
+    if (val===-1){
       timeOut.textContent='';
       anyTimeLabel.style.display='block';
     }else{
@@ -147,15 +138,13 @@ map.on('load', async ()=>{
     updateCircles(val);
   }
 
-  // 重新统计 & 画圆
   function updateCircles(tFilter){
     const tripsFiltered = filterTripsByTime(trips,tFilter);
     const statsFiltered = computeStationTraffic(stations,tripsFiltered);
 
-    // 若过滤后流量普遍很小，就把最大半径放大一点
-    tFilter === -1
-      ? radiusScale.range([0,25])
-      : radiusScale.range([3,50]);
+    tFilter===-1
+      ? radiusScale.range([2,25])
+      : radiusScale.range([2,50]);   // 过滤时放大上限
 
     circles
       .data(statsFiltered,d=>d.short_name)
@@ -165,11 +154,14 @@ map.on('load', async ()=>{
   }
 });
 
-/* === 5. DOM→Map 图层显隐开关保持原样即可 ============ */
-['chk-bos','chk-cam','chk-blue'].forEach((id,i)=>{
-  const layer = ['bike-bos-2022','bike-cam',''][i];   // 蓝点已换成 D3，不用隐藏
-  if(!layer) return;
-  document.getElementById(id).addEventListener('change',e=>{
-    map.setLayoutProperty(layer,'visibility',e.target.checked?'visible':'none');
-  });
+/* === 5. 图层显隐：蓝点已用 D3 绘制，无需隐藏 ========= */
+['chk-bos','chk-cam'].forEach(([id,layer])=>{
+  // 用结构拆包写法简短地对应 id → layer 名
 });
+function toggle(chkId,layerId){
+  document.getElementById(chkId).addEventListener('change',e=>{
+    map.setLayoutProperty(layerId,'visibility',e.target.checked?'visible':'none');
+  });
+}
+toggle('chk-bos','bike-bos-2022');
+toggle('chk-cam','bike-cam');
