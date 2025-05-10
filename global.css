@@ -6,7 +6,7 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
-  align-items: center;        /* 标题 + 开关 + 地图 水平居中 */
+  align-items: center;
   font: 100%/1.5 system-ui, sans-serif;
 }
 
@@ -48,7 +48,7 @@ header {
 
 /* === 地图容器 ====================================== */
 #map {
-  width: min(90vw, 1000px);  /* 大屏 1000px，窄屏占 90% 视口 */
+  width: min(90vw, 1000px);
   height: 600px;
   position: relative;
   border-radius: 8px;

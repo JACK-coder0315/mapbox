@@ -42,15 +42,15 @@ map.on('load', async () => {
     data: 'data/cambridge_bike_lanes.geojson'
   });
   const laneColors = {
-    'Bike Lane':                      '#32d400',
-    'Separated Bike Lane':            '#ff4d4d',
-    'Grade-Separated Bike Lane':      '#ff9d00',
-    'Bike Path/Multi-Use Path':       '#0094ff',
-    'Shared Lane Pavement Marking':   '#808080',
-    'Buffered Bike Lane':             '#8a2be2',
-    'Bus/Bike Lane':                  '#d81b60',
-    'Contra-flow':                    '#795548',
-    'Shared Street':                  '#00bcd4'
+    'Bike Lane':                    '#32d400',
+    'Separated Bike Lane':          '#ff4d4d',
+    'Grade-Separated Bike Lane':    '#ff9d00',
+    'Bike Path/Multi-Use Path':     '#0094ff',
+    'Shared Lane Pavement Marking': '#808080',
+    'Buffered Bike Lane':           '#8a2be2',
+    'Bus/Bike Lane':                '#d81b60',
+    'Contra-flow':                  '#795548',
+    'Shared Street':                '#00bcd4'
   };
   map.addLayer({
     id:    'bike-cam',
@@ -68,8 +68,12 @@ map.on('load', async () => {
   });
 
   // 4.3 Bluebikes 站点 & 可视化流量 ----------------
-  // （1）加载基础站点 GeoJSON
-  const raw = await fetch('data/bluebikes-stations.json').then(r => r.json());
+  const raw = await fetch('https://dsc106.com/labs/lab07/data/bluebikes-stations.json')
+    .then(r => {
+      if (!r.ok) throw new Error('stations.json 404');
+      return r.json();
+    });
+
   const blueGeo = {
     type: 'FeatureCollection',
     features: raw.data.stations.map(s => ({
@@ -85,9 +89,8 @@ map.on('load', async () => {
     }))
   };
 
-  // （2）加载并解析流量 CSV
   const trips = await d3.csv(
-    'data/bluebikes-traffic-2024-03.csv',
+    'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv',
     trip => {
       trip.started_at = new Date(trip.started_at);
       trip.ended_at   = new Date(trip.ended_at);
@@ -95,7 +98,6 @@ map.on('load', async () => {
     }
   );
 
-  // （3）根据当前 trips 统计 departures/arrivals
   function updateStats(filteredTrips) {
     const dep = d3.rollup(filteredTrips, v => v.length, d => d.start_station_id);
     const arr = d3.rollup(filteredTrips, v => v.length, d => d.end_station_id);
@@ -106,13 +108,10 @@ map.on('load', async () => {
       f.properties.totalTraffic = f.properties.departures + f.properties.arrivals;
     });
   }
-  // 初次统计
   updateStats(trips);
 
-  // （4）添加数据源 & 圆圈 Layer
   map.addSource('bluebikes', { type: 'geojson', data: blueGeo });
 
-  // 先算一次最大流量
   let maxTraffic = d3.max(blueGeo.features, f => f.properties.totalTraffic);
 
   map.addLayer({
@@ -125,9 +124,10 @@ map.on('load', async () => {
       'circle-stroke-color': '#fff',
       'circle-stroke-width': 1,
       'circle-radius': [
-        'interpolate', ['sqrt'],
-        ['get','totalTraffic'],
-        0,           0,
+        'interpolate',
+        ['exponential', 0.5],    // 指数插值实现 sqrt 效果
+        ['get', 'totalTraffic'],
+        0,        0,
         maxTraffic, 25
       ]
     }
@@ -154,7 +154,6 @@ map.on('load', async () => {
   console.log('✅ layers added');
 
   // === Step 5: 滑块交互 =================================
-  // 格式化分钟数为 AM/PM
   function formatTime(minutes) {
     const d = new Date(0, 0, 0, 0, minutes);
     return d.toLocaleString('en-US', { timeStyle: 'short' });
@@ -174,7 +173,6 @@ map.on('load', async () => {
       anyTimeLabel.style.display = 'none';
     }
 
-    // 只保留 start_time 在 t 分钟内的记录
     const filtered = t === -1
       ? trips
       : trips.filter(trip => {
@@ -184,7 +182,6 @@ map.on('load', async () => {
           return mins <= t;
         });
 
-    // 重算 stats、更新数据源、重绘半径
     updateStats(filtered);
     map.getSource('bluebikes').setData(blueGeo);
 
@@ -192,11 +189,11 @@ map.on('load', async () => {
     map.setPaintProperty(
       'bluebikes-circle',
       'circle-radius',
-      ['interpolate', ['sqrt'], ['get','totalTraffic'], 0, 0, maxTraffic, 25]
+      ['interpolate', ['exponential', 0.5], ['get','totalTraffic'], 0, 0, maxTraffic, 25]
     );
   });
 
-  // 触发一次初始渲染
+  // 初始渲染一次
   timeSlider.dispatchEvent(new Event('input'));
 
 }); // end of map.on('load')
@@ -211,6 +208,6 @@ function toggle(chkId, layerId) {
     );
   });
 }
-toggle('chk-bos',  'bike-bos-2022');
-toggle('chk-cam',  'bike-cam');
-toggle('chk-blue','bluebikes-circle');
+toggle('chk-bos',   'bike-bos-2022');
+toggle('chk-cam',   'bike-cam');
+toggle('chk-blue',  'bluebikes-circle');
