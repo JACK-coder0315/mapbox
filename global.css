@@ -19,15 +19,10 @@ h1{
 
 /* === 地图容器 ====================================== */
 #map{
-  /* ↓ 宽度限制：最多 1000px，通常占 90% 视口宽度 */
-  width:90%;
-  max-width:1000px;
-
-  /* ↓ 高度：固定 600px，也可以用 60vh 等相对单位 */
-  height:600px;
-
-  /* 可选美化 */
-  border-radius:8px;
-  box-shadow:0 4px 8px rgba(0,0,0,.1);
-  overflow:hidden;      /* 圆角别让 map 溢出 */
+  width: 1000px;     /* 或 900px、800px… 你觉得合适的数 */
+  max-width: 90%;    /* 小屏时不超出 90% 视口宽 */
+  margin: 0 auto;    /* ← 居中，让左右自动留白 */
+  height: 600px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,.1);
 }
