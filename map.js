@@ -113,17 +113,6 @@ map.on('load', async()=>{
     }
   });
 
-  // 4.3.4 站点鼠标提示
-  map.on('mouseenter','bluebikes‑circle', e=>{
-    map.getCanvas().style.cursor='pointer';
-    const p = e.features[0].properties;
-    new mapboxgl.Popup()
-      .setLngLat(e.lngLat)
-      .setHTML(`<strong>${p.name}</strong><br/>🚲 ${p.capacity} docks`)
-      .addTo(map);
-  });
-  map.on('mouseleave','bluebikes‑circle', ()=>map.getCanvas().style.cursor='');
-
   /* ---------- 完成日志 --------------------------------------- */
   console.log('✅  Bike‑lane & Bluebikes layers added');
 });
