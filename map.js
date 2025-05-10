@@ -83,27 +83,6 @@ map.on('load', () => {
     }
   });
 
-  /* ---------- 4.4  悬停信息弹窗 ---------- */
-  map.on('mouseenter', 'bike-cam', e => {
-    map.getCanvas().style.cursor = 'pointer';
-
-    const p = e.features[0].properties;
-    const html = `
-      <strong>${p.STREET}</strong><br/>
-      ${p.FacilityType}<br/>
-      length：${(p.LaneLengthFeet / 3.28).toFixed(1)} m
-    `;
-
-    new mapboxgl.Popup()
-      .setLngLat(e.lngLat)
-      .setHTML(html)
-      .addTo(map);
-  });
-
-  map.on('mouseleave', 'bike-cam', () => {
-    map.getCanvas().style.cursor = '';
-  });
-
   console.log('Bike‑lane layers added ✔');
 });
 
