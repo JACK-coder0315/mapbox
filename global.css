@@ -1,23 +1,33 @@
-/* 页面整体：垂直排布 */
+/* === 页面整体 ====================================== */
 html, body{
   height:100%;
   margin:0;
 }
 body{
+  /* 纵向布局：标题 + 地图 */
   display:flex;
-  flex-direction:column; /* 一列：标题 + 地图 */
-  font: 100%/1.5 system-ui, sans-serif;
+  flex-direction:column;
+  align-items:center;   /* ⬅️ 让标题和地图都水平居中 */
+  font:100%/1.5 system-ui, sans-serif;
 }
 
-/* 标题样式，可按需调整 */
+/* === 标题 (H1) ===================================== */
 h1{
-  margin:0;
-  padding:0.5em 1em;
+  margin:1.2rem 0 0.8rem;
   font-weight:600;
 }
 
-/* 地图填满剩余高度 */
+/* === 地图容器 ====================================== */
 #map{
-  flex:1;              /* 关键：占据 body 剩余空间 */
-  width:100%;
+  /* ↓ 宽度限制：最多 1000px，通常占 90% 视口宽度 */
+  width:90%;
+  max-width:1000px;
+
+  /* ↓ 高度：固定 600px，也可以用 60vh 等相对单位 */
+  height:600px;
+
+  /* 可选美化 */
+  border-radius:8px;
+  box-shadow:0 4px 8px rgba(0,0,0,.1);
+  overflow:hidden;      /* 圆角别让 map 溢出 */
 }
