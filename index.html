@@ -1,13 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="global.css" />
-    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <title>Bikewatching</title>
-  </head>
-  <body>
-    <h1>🚴🏼‍♀️ Bikewatching</h1>
-  </body>
+<html lang="zh‑CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bikewatching</title>
+
+  <!-- favicon -->
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+  <!-- 全局样式 -->
+  <link rel="stylesheet" href="global.css">
+
+  <!-- Mapbox GL 样式 -->
+  <link
+    href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
+    rel="stylesheet">
+
+  <!-- 让脚本在 DOM 全部生成后执行 -->
+  <script type="module" src="map.js" defer></script>
+</head>
+
+<body>
+  <h1>🚴🏻‍♂️ Bikewatching</h1>
+
+  <!-- 地图容器 -->
+  <div id="map"></div>
+</body>
 </html>
