@@ -1,80 +1,216 @@
-
-/* --------------------------------------------------------
- * map.js ‑ Boston / Cambridge 自行车道 + Bluebikes 可视化
- * ------------------------------------------------------ */
-
-/* === 1. 依赖（ESM） =================================== */
+// === 1. 依赖（ESM） ===================================
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
-console.log('Mapbox GL JS Loaded:', mapboxgl);
+import * as d3      from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
-/* === 2. Mapbox 令牌 ================================== */
+console.log('Mapbox GL JS Loaded:', mapboxgl);
+
+// === 2. Mapbox 令牌 ==================================
 mapboxgl.accessToken = 'pk.eyJ1IjoiamFjazAzMTUiLCJhIjoiY21haTZoNjA3MGsxdTJrcHlsMjZwZjU1aSJ9.bInG4_BU-h6a-eEXGHRDEg';
 
-/* === 3. 构建地图 ===================================== */
+// === 3. 构建地图 =====================================
 const map = new mapboxgl.Map({
-  container:'map',
-  style   :'mapbox://styles/mapbox/streets-v12',
-  center  :[-71.09415, 42.36027],
-  zoom    :12,
-  minZoom :5,
-  maxZoom :18
+  container: 'map',
+  style:     'mapbox://styles/mapbox/streets-v12',
+  center:    [-71.09415, 42.36027],
+  zoom:      12,
+  minZoom:   5,
+  maxZoom:   18
 });
 
-/* =============== 4. 图层 ============================== */
+// === 4. 图层 & 交互初始化 ============================
 map.on('load', async () => {
 
-  /* 4.1 Boston 2022 Bike‑lanes (统一绿色) --------------- */
-  map.addSource('bos_lanes_2022',{type:'geojson',data:'data/Existing_Bike_Network_2022.geojson'});
+  // 4.1 Boston 2022 Bike-lanes ---------------------
+  map.addSource('bos_lanes_2022', {
+    type: 'geojson',
+    data: 'data/Existing_Bike_Network_2022.geojson'
+  });
   map.addLayer({
-    id:'bike-bos-2022',type:'line',source:'bos_lanes_2022',
-    paint:{'line-color':'#32d400','line-width':3,'line-opacity':0.45}
+    id:    'bike-bos-2022',
+    type:  'line',
+    source:'bos_lanes_2022',
+    paint: {
+      'line-color':   '#32d400',
+      'line-width':   3,
+      'line-opacity': 0.45
+    }
   });
 
-  /* 4.2 Cambridge 车道（彩色） ------------------------- */
-  map.addSource('cam_lanes',{type:'geojson',data:'data/cambridge_bike_lanes.geojson'});
-  const laneColors={
-    'Bike Lane':'#32d400','Separated Bike Lane':'#ff4d4d',
-    'Grade-Separated Bike Lane':'#ff9d00','Bike Path/Multi-Use Path':'#0094ff',
-    'Shared Lane Pavement Marking':'#808080','Buffered Bike Lane':'#8a2be2',
-    'Bus/Bike Lane':'#d81b60','Contra-flow':'#795548','Shared Street':'#00bcd4'
+  // 4.2 Cambridge 车道（彩色） ----------------------
+  map.addSource('cam_lanes', {
+    type: 'geojson',
+    data: 'data/cambridge_bike_lanes.geojson'
+  });
+  const laneColors = {
+    'Bike Lane':                      '#32d400',
+    'Separated Bike Lane':            '#ff4d4d',
+    'Grade-Separated Bike Lane':      '#ff9d00',
+    'Bike Path/Multi-Use Path':       '#0094ff',
+    'Shared Lane Pavement Marking':   '#808080',
+    'Buffered Bike Lane':             '#8a2be2',
+    'Bus/Bike Lane':                  '#d81b60',
+    'Contra-flow':                    '#795548',
+    'Shared Street':                  '#00bcd4'
   };
   map.addLayer({
-    id:'bike-cam',type:'line',source:'cam_lanes',
-    paint:{
-      'line-color':['match',['get','FacilityType'],...Object.entries(laneColors).flat(),'#000'],
-      'line-width':3,'line-opacity':0.8
+    id:    'bike-cam',
+    type:  'line',
+    source:'cam_lanes',
+    paint: {
+      'line-color': [
+        'match', ['get','FacilityType'],
+        ...Object.entries(laneColors).flat(),
+        '#000'
+      ],
+      'line-width':   3,
+      'line-opacity': 0.8
     }
   });
 
-  /* 4.3 Bluebikes 站点 -------------------------------- */
-  const raw=await fetch('data/bluebikes-stations.json').then(r=>r.json());
-  const blueGeo={type:'FeatureCollection',features:raw.data.stations.map(s=>({
-    type:'Feature',
-    geometry:{type:'Point',coordinates:[+s.lon,+s.lat]},
-    properties:{capacity:+s.capacity}
-  }))};
-  map.addSource('bluebikes',{type:'geojson',data:blueGeo});
+  // 4.3 Bluebikes 站点 & 可视化流量 ----------------
+  // （1）加载基础站点 GeoJSON
+  const raw = await fetch('data/bluebikes-stations.json').then(r => r.json());
+  const blueGeo = {
+    type: 'FeatureCollection',
+    features: raw.data.stations.map(s => ({
+      type:     'Feature',
+      geometry: { type: 'Point', coordinates: [+s.lon, +s.lat] },
+      properties: {
+        station_id:   s.short_name,
+        capacity:     +s.capacity,
+        departures:   0,
+        arrivals:     0,
+        totalTraffic: 0
+      }
+    }))
+  };
+
+  // （2）加载并解析流量 CSV
+  const trips = await d3.csv(
+    'data/bluebikes-traffic-2024-03.csv',
+    trip => {
+      trip.started_at = new Date(trip.started_at);
+      trip.ended_at   = new Date(trip.ended_at);
+      return trip;
+    }
+  );
+
+  // （3）根据当前 trips 统计 departures/arrivals
+  function updateStats(filteredTrips) {
+    const dep = d3.rollup(filteredTrips, v => v.length, d => d.start_station_id);
+    const arr = d3.rollup(filteredTrips, v => v.length, d => d.end_station_id);
+    blueGeo.features.forEach(f => {
+      const id = f.properties.station_id;
+      f.properties.departures   = dep.get(id) ?? 0;
+      f.properties.arrivals     = arr.get(id) ?? 0;
+      f.properties.totalTraffic = f.properties.departures + f.properties.arrivals;
+    });
+  }
+  // 初次统计
+  updateStats(trips);
+
+  // （4）添加数据源 & 圆圈 Layer
+  map.addSource('bluebikes', { type: 'geojson', data: blueGeo });
+
+  // 先算一次最大流量
+  let maxTraffic = d3.max(blueGeo.features, f => f.properties.totalTraffic);
+
   map.addLayer({
-    id:'bluebikes-circle',type:'circle',source:'bluebikes',
-    paint:{
-      'circle-radius':['interpolate',['linear'],['get','capacity'],10,4,40,10,80,16],
-      'circle-color':'#0074D9','circle-opacity':0.85,
-      'circle-stroke-color':'#fff','circle-stroke-width':1
+    id:     'bluebikes-circle',
+    type:   'circle',
+    source: 'bluebikes',
+    paint: {
+      'circle-color':        '#0074D9',
+      'circle-opacity':      0.85,
+      'circle-stroke-color': '#fff',
+      'circle-stroke-width': 1,
+      'circle-radius': [
+        'interpolate', ['sqrt'],
+        ['get','totalTraffic'],
+        0,           0,
+        maxTraffic, 25
+      ]
     }
   });
 
-  console.log('✅ layers added');
-});
+  // 4.4 原生 Tooltip（Popup）----------------------
+  const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
+  map.on('mouseenter', 'bluebikes-circle', e => {
+    map.getCanvas().style.cursor = 'pointer';
+    const p = e.features[0].properties;
+    popup
+      .setLngLat(e.lngLat)
+      .setHTML(
+        `${p.totalTraffic} trips<br>` +
+        `${p.departures} departures, ${p.arrivals} arrivals`
+      )
+      .addTo(map);
+  });
+  map.on('mouseleave', 'bluebikes-circle', () => {
+    map.getCanvas().style.cursor = '';
+    popup.remove();
+  });
 
-/* =============== 5. 图层显隐开关 ===================== */
-['bos','cam','blue'].forEach(([abbr,layer])=>{
-  /* 这里只是为了书写简洁，真正执行请用下面单独写出的三行 👇 */
-});
-function toggle(chkId,layerId){
-  document.getElementById(chkId).addEventListener('change',e=>{
-    map.setLayoutProperty(layerId,'visibility',e.target.checked?'visible':'none');
+  console.log('✅ layers added');
+
+  // === Step 5: 滑块交互 =================================
+  // 格式化分钟数为 AM/PM
+  function formatTime(minutes) {
+    const d = new Date(0, 0, 0, 0, minutes);
+    return d.toLocaleString('en-US', { timeStyle: 'short' });
+  }
+
+  const timeSlider   = document.getElementById('time-slider');
+  const selectedTime = document.getElementById('selected-time');
+  const anyTimeLabel = document.getElementById('any-time');
+
+  timeSlider.addEventListener('input', () => {
+    const t = +timeSlider.value;
+    if (t === -1) {
+      selectedTime.textContent   = '';
+      anyTimeLabel.style.display = 'block';
+    } else {
+      selectedTime.textContent   = formatTime(t);
+      anyTimeLabel.style.display = 'none';
+    }
+
+    // 只保留 start_time 在 t 分钟内的记录
+    const filtered = t === -1
+      ? trips
+      : trips.filter(trip => {
+          const mins =
+            trip.started_at.getHours() * 60 +
+            trip.started_at.getMinutes();
+          return mins <= t;
+        });
+
+    // 重算 stats、更新数据源、重绘半径
+    updateStats(filtered);
+    map.getSource('bluebikes').setData(blueGeo);
+
+    maxTraffic = d3.max(blueGeo.features, f => f.properties.totalTraffic);
+    map.setPaintProperty(
+      'bluebikes-circle',
+      'circle-radius',
+      ['interpolate', ['sqrt'], ['get','totalTraffic'], 0, 0, maxTraffic, 25]
+    );
+  });
+
+  // 触发一次初始渲染
+  timeSlider.dispatchEvent(new Event('input'));
+
+}); // end of map.on('load')
+
+// === 5. 图层显隐开关 ===============================
+function toggle(chkId, layerId) {
+  document.getElementById(chkId).addEventListener('change', e => {
+    map.setLayoutProperty(
+      layerId,
+      'visibility',
+      e.target.checked ? 'visible' : 'none'
+    );
   });
 }
-toggle('chk-bos','bike-bos-2022');
-toggle('chk-cam','bike-cam');
+toggle('chk-bos',  'bike-bos-2022');
+toggle('chk-cam',  'bike-cam');
 toggle('chk-blue','bluebikes-circle');

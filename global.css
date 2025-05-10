@@ -1,46 +1,98 @@
 /* === 页面整体 ======================================= */
-html,body{height:100%;margin:0}
-body{
-  display:flex;
-  flex-direction:column;
-  align-items:center;        /* 标题 + 开关 + 地图 水平居中 */
-  font:100%/1.5 system-ui, sans-serif;
+html, body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;        /* 标题 + 开关 + 地图 水平居中 */
+  font: 100%/1.5 system-ui, sans-serif;
 }
 
 /* === 标题 =========================================== */
-h1{margin:1.2rem 0 .8rem;font-weight:600}
+h1 {
+  margin: 1.2rem 0 .8rem;
+  font-weight: 600;
+}
+
+/* === 滑块 Header（Step 5） ================================= */
+header {
+  display: flex;
+  gap: 1em;
+  align-items: baseline;
+  margin-bottom: .8rem;
+}
+#time-slider {
+  width: 200px;  /* 可根据需要调整 */
+}
+#selected-time,
+#any-time {
+  display: block;
+}
+#any-time {
+  font-style: italic;
+  color: #666;
+}
 
 /* === 图层开关行 ===================================== */
-#layer-toggles{display:flex;gap:1.2rem;margin-bottom:.8rem;font-size:.95rem}
-#layer-toggles input{margin-right:.35rem}
+#layer-toggles {
+  display: flex;
+  gap: 1.2rem;
+  margin-bottom: .8rem;
+  font-size: .95rem;
+}
+#layer-toggles input {
+  margin-right: .35rem;
+}
 
 /* === 地图容器 ====================================== */
-#map{
-  width:min(90vw,1000px);  /* 大屏 1000px，窄屏占 90% 视口 */
-  height:600px;
-  position:relative;
-  border-radius:8px;
-  box-shadow:0 4px 8px rgba(0,0,0,.1);
+#map {
+  width: min(90vw, 1000px);  /* 大屏 1000px，窄屏占 90% 视口 */
+  height: 600px;
+  position: relative;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,.1);
 }
 
 /* === 图例（右上角） ================================= */
-#legend{
-  position:absolute;
-  top:1rem;right:1rem;
-  background:#fff;
-  padding:.7rem 1rem;
-  border-radius:6px;
-  font-size:.9rem;
-  line-height:1.4;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-  z-index:1;
+#legend {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: #fff;
+  padding: .7rem 1rem;
+  border-radius: 6px;
+  font-size: .9rem;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  z-index: 1;
 }
-#legend h4{margin:.1rem 0 .4rem;font-size:.98rem}
-#legend ul{margin:0;padding:0;list-style:none}
-#legend li{display:flex;align-items:center;margin-bottom:.25rem}
-#legend span{
-  width:14px;height:14px;
-  border-radius:2px;
-  margin-right:.45rem;
-  flex:none;
+#legend h4 {
+  margin: .1rem 0 .4rem;
+  font-size: .98rem;
+}
+#legend ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#legend li {
+  display: flex;
+  align-items: center;
+  margin-bottom: .25rem;
+}
+#legend span {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  margin-right: .45rem;
+  flex: none;
+}
+
+/* === Step 4: 调整 Circle 样式，开启 pointer-events 来支持原生 tooltip === */
+svg circle {
+  fill: steelblue;
+  fill-opacity: 0.6;
+  stroke: white;
+  pointer-events: auto;
 }
