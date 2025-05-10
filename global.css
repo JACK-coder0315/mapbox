@@ -1,28 +1,46 @@
-/* === 页面整体 ====================================== */
-html, body{
-  height:100%;
-  margin:0;
-}
+/* === 页面整体 ======================================= */
+html,body{height:100%;margin:0}
 body{
-  /* 纵向布局：标题 + 地图 */
   display:flex;
   flex-direction:column;
-  align-items:center;   /* ⬅️ 让标题和地图都水平居中 */
+  align-items:center;        /* 标题 + 开关 + 地图 水平居中 */
   font:100%/1.5 system-ui, sans-serif;
 }
 
-/* === 标题 (H1) ===================================== */
-h1{
-  margin:1.2rem 0 0.8rem;
-  font-weight:600;
-}
+/* === 标题 =========================================== */
+h1{margin:1.2rem 0 .8rem;font-weight:600}
+
+/* === 图层开关行 ===================================== */
+#layer-toggles{display:flex;gap:1.2rem;margin-bottom:.8rem;font-size:.95rem}
+#layer-toggles input{margin-right:.35rem}
 
 /* === 地图容器 ====================================== */
 #map{
-  width: 1000px;     /* 或 900px、800px… 你觉得合适的数 */
-  max-width: 90%;    /* 小屏时不超出 90% 视口宽 */
-  margin: 0 auto;    /* ← 居中，让左右自动留白 */
-  height: 600px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,.1);
+  width:min(90vw,1000px);  /* 大屏 1000px，窄屏占 90% 视口 */
+  height:600px;
+  position:relative;
+  border-radius:8px;
+  box-shadow:0 4px 8px rgba(0,0,0,.1);
+}
+
+/* === 图例（右上角） ================================= */
+#legend{
+  position:absolute;
+  top:1rem;right:1rem;
+  background:#fff;
+  padding:.7rem 1rem;
+  border-radius:6px;
+  font-size:.9rem;
+  line-height:1.4;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  z-index:1;
+}
+#legend h4{margin:.1rem 0 .4rem;font-size:.98rem}
+#legend ul{margin:0;padding:0;list-style:none}
+#legend li{display:flex;align-items:center;margin-bottom:.25rem}
+#legend span{
+  width:14px;height:14px;
+  border-radius:2px;
+  margin-right:.45rem;
+  flex:none;
 }
