@@ -3,6 +3,8 @@ html, body {
   height: 100%;
   margin: 0;
   font: 100%/1.5 system-ui, sans-serif;
+}
+body {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,7 +51,7 @@ header {
 /* === 地图容器 ====================================== */
 #map {
   width: min(90vw, 1000px);
-  height: 600px;               /* 必须有高度 */
+  height: 600px;
   position: relative;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0,0,0,.1);
@@ -57,7 +59,7 @@ header {
 
 /* === SVG circle 样式 （填充由 JS 控制） =============== */
 svg.overlay circle {
-  pointer-events: auto;        /* 支持<title>文字提示 */
+  pointer-events: auto;
   fill-opacity: 0.6;
   stroke: white;
   stroke-width: 1;
@@ -91,3 +93,27 @@ svg.overlay circle {
 .legend-color.dep { background: steelblue; }
 .legend-color.bal { background: purple; }
 .legend-color.arr { background: darkorange; }
+
+/* === Step 7：项目截图展示 ================================= */
+.project-screenshots {
+  width: min(90vw, 1000px);
+  margin: 1.5rem auto;
+  text-align: center;
+}
+.project-screenshots h2 {
+  margin-bottom: .5rem;
+}
+.project-screenshots p {
+  margin-bottom: 1rem;
+  color: #555;
+}
+.project-screenshots .screenshots {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+.project-screenshots .screenshots img {
+  max-width: 49%;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
