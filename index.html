@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Bikewatching</title>
 
-  <!-- Mapbox GL 样式 -->
+  <!-- Mapbox GL JS 样式 -->
   <link
-    href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css"
-    rel="stylesheet"
+     href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css"
+     rel="stylesheet"
   />
   <link rel="stylesheet" href="global.css" />
   <script type="module" src="map.js" defer></script>
@@ -30,13 +30,14 @@
     <label><input type="checkbox" id="chk-blue" checked />Bluebikes</label>
   </div>
 
+  <!-- 地图容器 -->
   <div id="map"></div>
 
-  <!-- 图例：放在地图下方并水平居中 -->
+  <!-- 图例：在地图下方且居中 -->
   <div class="legend">
-    <div>More departures</div>
-    <div>Balanced</div>
-    <div>More arrivals</div>
+    <div class="dep">More departures</div>
+    <div class="bal">Balanced</div>
+    <div class="arr">More arrivals</div>
   </div>
 
 </body>

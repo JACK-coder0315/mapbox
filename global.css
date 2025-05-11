@@ -1,44 +1,63 @@
 html, body {
-  margin: 0; height: 100%;
+  margin: 0;
+  height: 100%;
   font: 100%/1.5 system-ui, sans-serif;
-  display: flex; flex-direction: column; align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 h1 {
-  margin: 1rem 0 0.5rem; font-weight: 600;
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
 }
 
+/* 滑块和状态 */
 header {
   width: min(90vw, 1000px);
-  margin: 0 auto 0.8rem;
-  display: flex; justify-content: center; align-items: baseline; gap: 1em;
+  margin: 0 auto 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 1em;
 }
-#time-slider { width: 200px; }
-#selected-time, #any-time { display: block; }
-#any-time { font-style: italic; color: #666; }
+#time-slider {
+  width: 200px;
+}
+#selected-time,
+#any-time {
+  display: block;
+}
+#any-time {
+  font-style: italic;
+  color: #666;
+}
 
+/* 图层开关 */
 #layer-toggles {
-  display: flex; gap: 1.2rem; margin-bottom: .8rem;
+  display: flex;
+  gap: 1.2rem;
+  margin-bottom: 1rem;
 }
-#layer-toggles input { margin-right: .35rem; }
+#layer-toggles input {
+  margin-right: .35rem;
+}
 
+/* 地图 */
 #map {
   width: min(90vw, 1000px);
-  height: 600px;
-  position: relative;
+  height: 600px;           /* **必须**指定一个高度 */
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0,0,0,.1);
+  position: relative;      /* 如果后来要在上面绝对定位 */
 }
 
-/* SVG circles styling */
+/* SVG Overlay 圆点样式（保留你自己的 JS 控制 fill-opacity、stroke 等） */
 svg.overlay circle {
-  fill-opacity: 0.6;
-  stroke: white; stroke-width: 1;
-  pointer-events: auto;
-  /* JS 会注入 --departure-ratio 变量，用于图层着色 */
+  pointer-events: auto;    /* 让 <title> tooltip 能触发 */
 }
 
-/* Legend 下方居中 */
+/* 图例：手动指定三种背景色，不用 color-mix */
 .legend {
   display: flex;
   width: min(90vw, 1000px);
@@ -50,11 +69,10 @@ svg.overlay circle {
 .legend > div {
   flex: 1;
   text-align: center;
-  padding: .5em .2em;
-  color: white;
+  padding: .6em .2em;
+  color: #fff;
   font-size: .9rem;
 }
-/* 手动指定三种背景色 */
-.legend > div:nth-child(1) { background: steelblue; }
-.legend > div:nth-child(2) { background: purple; }
-.legend > div:nth-child(3) { background: darkorange; }
+.legend > .dep { background: steelblue; }
+.legend > .bal { background: purple; }
+.legend > .arr { background: darkorange; }
