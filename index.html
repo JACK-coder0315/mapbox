@@ -5,26 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Bikewatching</title>
 
-  <!-- favicon -->
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-
-  <!-- Mapbox GL JS 样式 -->
+  <!-- Mapbox GL 样式 -->
   <link
     href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css"
     rel="stylesheet"
   />
-
-  <!-- 全局样式 -->
   <link rel="stylesheet" href="global.css" />
-
-  <!-- 主脚本（ES-module） -->
   <script type="module" src="map.js" defer></script>
 </head>
 <body>
 
   <h1>🚴🏻‍♂️ Bikewatching</h1>
 
-  <!-- Step 5：时间过滤滑块 -->
   <header>
     <label for="time-slider">Filter by time:</label>
     <input type="range" id="time-slider" min="-1" max="1440" value="-1" />
@@ -32,21 +24,19 @@
     <em id="any-time">(any time)</em>
   </header>
 
-  <!-- 图层开关 -->
   <div id="layer-toggles">
-    <label><input type="checkbox" id="chk-bos"  checked />Boston 2022 Bike Lanes</label>
-    <label><input type="checkbox" id="chk-cam"  checked />Cambridge Bike Lanes</label>
-    <label><input type="checkbox" id="chk-blue" checked />Bluebikes Stations</label>
+    <label><input type="checkbox" id="chk-bos"  checked />Boston Lanes</label>
+    <label><input type="checkbox" id="chk-cam"  checked />Cambridge Lanes</label>
+    <label><input type="checkbox" id="chk-blue" checked />Bluebikes</label>
   </div>
 
-  <!-- 地图容器 -->
   <div id="map"></div>
 
-  <!-- Step 6.2：图例（放在地图下方并居中） -->
+  <!-- 图例：放在地图下方并水平居中 -->
   <div class="legend">
-    <div style="--departure-ratio:1">More departures</div>
-    <div style="--departure-ratio:0.5">Balanced</div>
-    <div style="--departure-ratio:0">More arrivals</div>
+    <div>More departures</div>
+    <div>Balanced</div>
+    <div>More arrivals</div>
   </div>
 
 </body>

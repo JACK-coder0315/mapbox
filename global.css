@@ -1,54 +1,27 @@
-/* === 页面整体 ======================================= */
 html, body {
-  height: 100%;
-  margin: 0;
-}
-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  margin: 0; height: 100%;
   font: 100%/1.5 system-ui, sans-serif;
+  display: flex; flex-direction: column; align-items: center;
 }
 
-/* === 标题 =========================================== */
 h1 {
-  margin: 1.2rem 0 .8rem;
-  font-weight: 600;
+  margin: 1rem 0 0.5rem; font-weight: 600;
 }
 
-/* === 滑块 Header ===================================== */
 header {
   width: min(90vw, 1000px);
-  margin: 0 auto .8rem;
-  display: flex;
-  justify-content: center;
-  align-items: baseline;
-  gap: 1em;
+  margin: 0 auto 0.8rem;
+  display: flex; justify-content: center; align-items: baseline; gap: 1em;
 }
-#time-slider {
-  width: 200px;
-}
-#selected-time,
-#any-time {
-  display: block;
-}
-#any-time {
-  font-style: italic;
-  color: #666;
-}
+#time-slider { width: 200px; }
+#selected-time, #any-time { display: block; }
+#any-time { font-style: italic; color: #666; }
 
-/* === 图层开关行 ===================================== */
 #layer-toggles {
-  display: flex;
-  gap: 1.2rem;
-  margin-bottom: .8rem;
-  font-size: .95rem;
+  display: flex; gap: 1.2rem; margin-bottom: .8rem;
 }
-#layer-toggles input {
-  margin-right: .35rem;
-}
+#layer-toggles input { margin-right: .35rem; }
 
-/* === 地图容器 ====================================== */
 #map {
   width: min(90vw, 1000px);
   height: 600px;
@@ -57,42 +30,31 @@ header {
   box-shadow: 0 4px 8px rgba(0,0,0,.1);
 }
 
-/* === Step 4 & 6：SVG circle 样式，支持原生 tooltip 与流向着色 === */
+/* SVG circles styling */
 svg.overlay circle {
-  --color-departures: steelblue;
-  --color-arrivals:   darkorange;
-  fill: color-mix(
-    in oklch,
-    var(--color-departures) calc(100% * var(--departure-ratio)),
-    var(--color-arrivals)
-  );
   fill-opacity: 0.6;
-  stroke: white;
-  stroke-width: 1;
+  stroke: white; stroke-width: 1;
   pointer-events: auto;
+  /* JS 会注入 --departure-ratio 变量，用于图层着色 */
 }
 
-/* === Step 6.2：图例样式（下方居中） ===================== */
+/* Legend 下方居中 */
 .legend {
   display: flex;
-  justify-content: center;
-  gap: 1px;
-  margin: 1rem auto;
-  background: rgba(255,255,255,0.9);
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  overflow: hidden;
   width: min(90vw, 1000px);
+  margin: 1rem auto;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 .legend > div {
   flex: 1;
   text-align: center;
-  padding: .4em .6em;
+  padding: .5em .2em;
   color: white;
-  background: color-mix(
-    in oklch,
-    var(--color-departures) calc(100% * var(--departure-ratio)),
-    var(--color-arrivals)
-  );
-  font-size: .85rem;
+  font-size: .9rem;
 }
+/* 手动指定三种背景色 */
+.legend > div:nth-child(1) { background: steelblue; }
+.legend > div:nth-child(2) { background: purple; }
+.legend > div:nth-child(3) { background: darkorange; }
