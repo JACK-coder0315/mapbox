@@ -1,58 +1,74 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Bikewatching</title>
 
-  <!-- Mapbox GL JS 样式 -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="global.css" />
-  <script type="module" src="map.js" defer></script>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bikewatching</title>
+
+    <!-- Mapbox GL JS 样式 -->
+    <link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css" rel="stylesheet" />
+    <link rel="stylesheet" href="global.css" />
+    <script type="module" src="map.js" defer></script>
 </head>
+
 <body>
 
-  <h1>🚴🏻‍♂️ Bikewatching</h1>
+    <h1>🚴🏻‍♂️ Bikewatching</h1>
 
-  <!-- 时间过滤滑块 -->
-  <header>…</header>
+    <!-- 时间过滤滑块 -->
+    <header>
+        <label for="time-slider">Filter by time:</label>
+        <input type="range" id="time-slider" min="-1" max="1440" value="-1" />
+        <time id="selected-time"></time>
+        <em id="any-time">(any time)</em>
+    </header>
 
-  <!-- 图层开关 -->
-  <div id="layer-toggles">…</div>
-
-  <!-- 地图容器 -->
-  <div id="map"></div>
-
-  <!-- 图例 -->
-  <div class="legend">…</div>
-
-  <!-- 项目截图展示 -->
-  <section class="project-screenshots">
-    <h2>Bikewatching: Boston Bike Traffic</h2>
-    <div class="screenshots">
-      <figure>
-        <img
-          src="images/2.png"
-          alt="Morning peak (8:15 AM) example"
-        />
-        <figcaption>
-          Morning peak (8:15 AM): rides cluster toward downtown and MIT, indicating strong inbound commuter flows.
-        </figcaption>
-      </figure>
-      <figure>
-        <img
-          src="images/1.png"
-          alt="Evening peak (6:30 PM) example"
-        />
-        <figcaption>
-          Evening peak (6:30 PM): rides radiate outward from downtown and campus stations toward residential areas, reflecting outbound commuting.
-        </figcaption>
-      </figure>
+    <!-- 图层开关 -->
+    <div id="layer-toggles">
+        <label><input type="checkbox" id="chk-bos" checked />Boston 2022 Bike Lanes</label>
+        <label><input type="checkbox" id="chk-cam" checked />Cambridge Bike Lanes</label>
+        <label><input type="checkbox" id="chk-blue" checked />Bluebikes Stations</label>
     </div>
-  </section>
+
+    <!-- 地图容器 -->
+    <div id="map"></div>
+
+    <!-- 图例 -->
+    <div class="legend">
+        <span class="legend-title">LEGEND:</span>
+        <span class="legend-item">
+            <span class="legend-color dep"></span>More departures
+        </span>
+        <span class="legend-item">
+            <span class="legend-color bal"></span>Balanced
+        </span>
+        <span class="legend-item">
+            <span class="legend-color arr"></span>More arrivals
+        </span>
+    </div>
+
+    <!-- 项目截图展示 -->
+    <section class="project-screenshots">
+        <h2>Bikewatching: Boston Bike Traffic</h2>
+        <div class="screenshots">
+            <figure>
+                <img src="images/2.png" alt="Morning peak (8:15 AM) example" />
+                <figcaption>
+                    Morning peak (8:15 AM): rides cluster toward downtown and MIT, indicating strong inbound commuter
+                    flows.
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="images/1.png" alt="Evening peak (6:30 PM) example" />
+                <figcaption>
+                    Evening peak (6:30 PM): rides radiate outward from downtown and campus stations toward residential
+                    areas, reflecting outbound commuting.
+                </figcaption>
+            </figure>
+        </div>
+    </section>
 
 </body>
+
 </html>
