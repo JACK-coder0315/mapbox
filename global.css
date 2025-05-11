@@ -1,23 +1,25 @@
-/* 基础布局 */
+/* === 页面整体 ======================================= */
 html, body {
-  margin: 0;
   height: 100%;
-  font: 100%/1.5 system-ui, sans-serif;
+  margin: 0;
+}
+body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  font: 100%/1.5 system-ui, sans-serif;
 }
 
-/* 标题 */
+/* === 标题 =========================================== */
 h1 {
-  margin: 1rem 0 0.5rem;
+  margin: 1.2rem 0 .8rem;
   font-weight: 600;
 }
 
-/* 滑块 Header */
+/* === 滑块 Header ===================================== */
 header {
   width: min(90vw, 1000px);
-  margin: 0 auto 1rem;
+  margin: 0 auto .8rem;
   display: flex;
   justify-content: center;
   align-items: baseline;
@@ -35,51 +37,58 @@ header {
   color: #666;
 }
 
-/* 图层开关 */
+/* === 图层开关行 ===================================== */
 #layer-toggles {
   display: flex;
   gap: 1.2rem;
-  margin-bottom: 1rem;
+  margin-bottom: .8rem;
+  font-size: .95rem;
 }
 #layer-toggles input {
   margin-right: .35rem;
 }
 
-/* 地图容器 */
+/* === 地图容器 ====================================== */
 #map {
   width: min(90vw, 1000px);
-  height: 600px;         /* 必须有高度 */
+  height: 600px;
+  position: relative;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0,0,0,.1);
-  position: relative;
 }
 
-/* SVG 圆点样式 */
+/* === Step 4 & 6：SVG circle 样式，支持原生 tooltip 和流向着色 === */
 svg.overlay circle {
-  pointer-events: auto;    /* 支持 title tooltip */
-  /* fill 由 JS .style('fill', ...) 设定 */
+  --color-departures: steelblue;
+  --color-arrivals:   darkorange;
+  /* 根据 JS 注入的 --departure-ratio 决定插值比例 */
+  fill: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio)),
+    var(--color-arrivals)
+  );
   fill-opacity: 0.6;
   stroke: white;
   stroke-width: 1;
+  pointer-events: auto;
 }
 
-/* 图例（下方居中） */
+/* === Step 6.2：图例样式 ==================================== */
 .legend {
-  display: flex;
   width: min(90vw, 1000px);
   margin: 1rem auto;
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  display: flex;
+  gap: 1px;                /* 小缝隙分隔色板 */
 }
 .legend > div {
   flex: 1;
   text-align: center;
-  padding: .5em .2em;
+  padding: .4em .2em;
   color: white;
+  background: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio)),
+    var(--color-arrivals)
+  );
   font-size: .9rem;
 }
-/* 固定三色，不动态 */
-.legend > div:nth-child(1) { background: steelblue; }
-.legend > div:nth-child(2) { background: purple; }
-.legend > div:nth-child(3) { background: darkorange; }
