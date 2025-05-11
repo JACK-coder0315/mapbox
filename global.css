@@ -1,3 +1,4 @@
+/* 基础布局 */
 html, body {
   margin: 0;
   height: 100%;
@@ -7,12 +8,13 @@ html, body {
   align-items: center;
 }
 
+/* 标题 */
 h1 {
   margin: 1rem 0 0.5rem;
   font-weight: 600;
 }
 
-/* 滑块和状态 */
+/* 滑块 Header */
 header {
   width: min(90vw, 1000px);
   margin: 0 auto 1rem;
@@ -43,21 +45,25 @@ header {
   margin-right: .35rem;
 }
 
-/* 地图 */
+/* 地图容器 */
 #map {
   width: min(90vw, 1000px);
-  height: 600px;           /* **必须**指定一个高度 */
+  height: 600px;         /* 必须有高度 */
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0,0,0,.1);
-  position: relative;      /* 如果后来要在上面绝对定位 */
+  position: relative;
 }
 
-/* SVG Overlay 圆点样式（保留你自己的 JS 控制 fill-opacity、stroke 等） */
+/* SVG 圆点样式 */
 svg.overlay circle {
-  pointer-events: auto;    /* 让 <title> tooltip 能触发 */
+  pointer-events: auto;    /* 支持 title tooltip */
+  /* fill 由 JS .style('fill', ...) 设定 */
+  fill-opacity: 0.6;
+  stroke: white;
+  stroke-width: 1;
 }
 
-/* 图例：手动指定三种背景色，不用 color-mix */
+/* 图例（下方居中） */
 .legend {
   display: flex;
   width: min(90vw, 1000px);
@@ -69,10 +75,11 @@ svg.overlay circle {
 .legend > div {
   flex: 1;
   text-align: center;
-  padding: .6em .2em;
-  color: #fff;
+  padding: .5em .2em;
+  color: white;
   font-size: .9rem;
 }
-.legend > .dep { background: steelblue; }
-.legend > .bal { background: purple; }
-.legend > .arr { background: darkorange; }
+/* 固定三色，不动态 */
+.legend > div:nth-child(1) { background: steelblue; }
+.legend > div:nth-child(2) { background: purple; }
+.legend > div:nth-child(3) { background: darkorange; }
