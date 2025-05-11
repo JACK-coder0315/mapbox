@@ -66,7 +66,6 @@ map.on('load', async () => {
   });
 
   // —— 5. D3 SVG Overlay for Bluebikes Stations ——  
-  // (1) 在 Mapbox Canvas 容器内插入 SVG
   const container = map.getCanvasContainer();
   const svg = d3.select(container)
     .append('svg')
@@ -76,11 +75,11 @@ map.on('load', async () => {
     .style('left',0)
     .style('width','100%')
     .style('height','100%')
-    .style('pointer-events','none'); // 让地图事件透过
+    .style('pointer-events','none');
 
   const g = svg.append('g');
 
-  // (2) 加载站点数据并初始化每个站点的流量属性
+  // (2) 加载站点数据并初始化属性
   const rawStations = await fetch('https://dsc106.com/labs/lab07/data/bluebikes-stations.json')
     .then(r => r.ok ? r.json() : Promise.reject('stations.json 404'));
   const stations = rawStations.data.stations.map(s => ({
@@ -102,7 +101,7 @@ map.on('load', async () => {
     }
   );
 
-  // (4) 统计函数：给定一组 trips，更新 stations 中的 departures/arrivals/totalTraffic
+  // (4) 统计函数
   function updateStats(filteredTrips) {
     const dep = d3.rollup(filteredTrips, v => v.length, d => d.start_station_id);
     const arr = d3.rollup(filteredTrips, v => v.length, d => d.end_station_id);
@@ -114,18 +113,18 @@ map.on('load', async () => {
   }
   updateStats(trips);
 
-  // (5) 构造比例尺：sqrt 缩放，最大半径 25px
+  // (5) 比例尺
   const maxTraffic   = d3.max(stations, st => st.totalTraffic);
   const radiusScale  = d3.scaleSqrt()
     .domain([0, maxTraffic])
     .range([0, 25]);
 
-  // (6) 投影函数：经纬度 → Mapbox 像素坐标
+  // (6) 投影
   function project(d) {
     return map.project([d.lon, d.lat]);
   }
 
-  // (7) 渲染函数：绘制/更新所有 circles
+  // (7) 渲染并添加 <title>
   function render() {
     const u = g.selectAll('circle')
       .data(stations, d => d.station_id);
@@ -145,15 +144,26 @@ map.on('load', async () => {
         .attr('cy', d => project(d).y),
       exit => exit.remove()
     );
+
+    // —— 在 render 里移除旧的<title>并重新添加纯文本tooltip —— 
+    g.selectAll('circle').each(function(d) {
+      // 先清除旧的
+      d3.select(this).selectAll('title').remove();
+      // 再添加新的<title>
+      d3.select(this)
+        .append('title')
+        .text(
+          `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`
+        );
+    });
   }
 
-  // 初始渲染 & 绑定 map 交互事件
+  // 初始渲染 & 绑定地图事件
   render();
   map.on('move', render);
   map.on('moveend', render);
 
   // —— 6. 滑块交互（Step 5） ——  
-  // 格式化分钟到 AM/PM
   function formatTime(minutes) {
     const d = new Date(0,0,0,0,minutes);
     return d.toLocaleString('en-US',{timeStyle:'short'});
@@ -172,7 +182,7 @@ map.on('load', async () => {
       selectedTime.textContent   = formatTime(t);
       anyTimeLabel.style.display = 'none';
     }
-    // 过滤出发时间在 t 分钟内的 trips
+
     const filtered = t < 0
       ? trips
       : trips.filter(trip => {
@@ -181,12 +191,11 @@ map.on('load', async () => {
           return mins <= t;
         });
 
-    // 重新统计并渲染
     updateStats(filtered);
     render();
   });
 
-  // 触发一次初始过滤 & 渲染
+  // 初始触发一次
   timeSlider.dispatchEvent(new Event('input'));
 
 }); // end map.on('load')
