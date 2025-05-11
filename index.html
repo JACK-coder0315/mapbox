@@ -13,6 +13,7 @@
     href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/dist/mapbox-gl.css"
     rel="stylesheet"
   />
+
   <!-- 全局样式 -->
   <link rel="stylesheet" href="global.css" />
 
@@ -23,16 +24,10 @@
 
   <h1>🚴🏻‍♂️ Bikewatching</h1>
 
-  <!-- Step 5.1：时间过滤滑块 Header -->
+  <!-- Step 5.1: 时间过滤滑块 Header -->
   <header>
     <label for="time-slider">Filter by time:</label>
-    <input
-      type="range"
-      id="time-slider"
-      min="-1"
-      max="1440"
-      value="-1"
-    />
+    <input type="range" id="time-slider" min="-1" max="1440" value="-1" />
     <time id="selected-time"></time>
     <em id="any-time">(any time)</em>
   </header>
@@ -44,7 +39,7 @@
     <label><input type="checkbox" id="chk-blue" checked />Bluebikes Stations</label>
   </div>
 
-  <!-- 地图 -->
+  <!-- 地图容器 -->
   <div id="map"></div>
 
 </body>

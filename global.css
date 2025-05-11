@@ -22,13 +22,14 @@ header {
   gap: 1em;
   align-items: baseline;
   margin-bottom: .8rem;
+  margin-left: auto;           /* 推到右侧 */
 }
 #time-slider {
-  width: 200px;  /* 可根据需要调整 */
+  width: 200px;                /* 可调整 */
 }
 #selected-time,
 #any-time {
-  display: block;
+  display: block;              /* 独占一行，避免换行抖动 */
 }
 #any-time {
   font-style: italic;
@@ -55,7 +56,16 @@ header {
   box-shadow: 0 4px 8px rgba(0,0,0,.1);
 }
 
-/* === 图例（右上角） ================================= */
+/* === Step 4: SVG circle 样式，支持原生 <title> tooltip === */
+svg.overlay circle {
+  fill: steelblue;
+  fill-opacity: 0.6;
+  stroke: white;
+  stroke-width: 1;
+  pointer-events: auto;       /* 支持鼠标悬停触发 <title> */
+}
+
+/* === 右上角图例（若需要） ============================ */
 #legend {
   position: absolute;
   top: 1rem; right: 1rem;
@@ -66,33 +76,4 @@ header {
   line-height: 1.4;
   box-shadow: 0 2px 6px rgba(0,0,0,.15);
   z-index: 1;
-}
-#legend h4 {
-  margin: .1rem 0 .4rem;
-  font-size: .98rem;
-}
-#legend ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-#legend li {
-  display: flex;
-  align-items: center;
-  margin-bottom: .25rem;
-}
-#legend span {
-  width: 14px;
-  height: 14px;
-  border-radius: 2px;
-  margin-right: .45rem;
-  flex: none;
-}
-
-/* === Step 4: 调整 Circle 样式，开启 pointer-events 来支持原生 tooltip === */
-svg circle {
-  fill: steelblue;
-  fill-opacity: 0.6;
-  stroke: white;
-  pointer-events: auto;
 }
