@@ -16,14 +16,18 @@ h1 {
   font-weight: 600;
 }
 
-/* === 滑块 Header（Step 5） ================================= */
 header {
+  /* 和地图同宽，并水平居中 */
+  width: min(90vw, 1000px);
+  margin: 0 auto .8rem;
+
+  /* flex 布局，子元素居中 */
   display: flex;
-  gap: 1em;
+  justify-content: center;
   align-items: baseline;
-  margin-bottom: .8rem;
-  margin-left: auto;           /* 推到右侧 */
+  gap: 1em;
 }
+
 #time-slider {
   width: 200px;                /* 可调整 */
 }
