@@ -17,7 +17,7 @@
   <!-- 全局样式 -->
   <link rel="stylesheet" href="global.css" />
 
-  <!-- 主脚本 -->
+  <!-- 主脚本（ES-module） -->
   <script type="module" src="map.js" defer></script>
 </head>
 <body>
@@ -34,15 +34,15 @@
 
   <!-- 图层开关 -->
   <div id="layer-toggles">
-    <label><input type="checkbox" id="chk-bos" checked />Boston 2022 Bike Lanes</label>
-    <label><input type="checkbox" id="chk-cam" checked />Cambridge Bike Lanes</label>
+    <label><input type="checkbox" id="chk-bos"  checked />Boston 2022 Bike Lanes</label>
+    <label><input type="checkbox" id="chk-cam"  checked />Cambridge Bike Lanes</label>
     <label><input type="checkbox" id="chk-blue" checked />Bluebikes Stations</label>
   </div>
 
   <!-- 地图容器 -->
   <div id="map"></div>
 
-  <!-- Step 6.2：图例 -->
+  <!-- Step 6.2：图例（放在地图下方并居中） -->
   <div class="legend">
     <div style="--departure-ratio:1">More departures</div>
     <div style="--departure-ratio:0.5">Balanced</div>

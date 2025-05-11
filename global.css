@@ -57,11 +57,10 @@ header {
   box-shadow: 0 4px 8px rgba(0,0,0,.1);
 }
 
-/* === Step 4 & 6：SVG circle 样式，支持原生 tooltip 和流向着色 === */
+/* === Step 4 & 6：SVG circle 样式，支持原生 tooltip 与流向着色 === */
 svg.overlay circle {
   --color-departures: steelblue;
   --color-arrivals:   darkorange;
-  /* 根据 JS 注入的 --departure-ratio 决定插值比例 */
   fill: color-mix(
     in oklch,
     var(--color-departures) calc(100% * var(--departure-ratio)),
@@ -73,22 +72,27 @@ svg.overlay circle {
   pointer-events: auto;
 }
 
-/* === Step 6.2：图例样式 ==================================== */
+/* === Step 6.2：图例样式（下方居中） ===================== */
 .legend {
-  width: min(90vw, 1000px);
-  margin: 1rem auto;
   display: flex;
-  gap: 1px;                /* 小缝隙分隔色板 */
+  justify-content: center;
+  gap: 1px;
+  margin: 1rem auto;
+  background: rgba(255,255,255,0.9);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  overflow: hidden;
+  width: min(90vw, 1000px);
 }
 .legend > div {
   flex: 1;
   text-align: center;
-  padding: .4em .2em;
+  padding: .4em .6em;
   color: white;
   background: color-mix(
     in oklch,
     var(--color-departures) calc(100% * var(--departure-ratio)),
     var(--color-arrivals)
   );
-  font-size: .9rem;
+  font-size: .85rem;
 }
