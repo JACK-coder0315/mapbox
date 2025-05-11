@@ -1,11 +1,13 @@
+// map.js
+
 // === 1. 依赖（ESM） ===================================
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 import * as d3      from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
-// === 2. Mapbox Token ==================================
+// === 2. Mapbox 令牌 ==================================
 mapboxgl.accessToken = 'pk.eyJ1IjoiamFjazAzMTUiLCJhIjoiY21haTZoNjA3MGsxdTJrcHlsMjZwZjU1aSJ9.bInG4_BU-h6a-eEXGHRDEg';
 
-// === 3. 构建 Mapbox 地图 ==============================
+// === 3. 构建 Mapbox 地图 =============================
 const map = new mapboxgl.Map({
   container: 'map',
   style:     'mapbox://styles/mapbox/streets-v12',
@@ -16,7 +18,7 @@ const map = new mapboxgl.Map({
 });
 
 map.on('load', async () => {
-  // —— 4. 添加自行车道图层 ——  
+  // —— 4. 添加 Boston & Cambridge 自行车道 ——  
   map.addSource('bos_lanes_2022', {
     type: 'geojson',
     data: 'data/Existing_Bike_Network_2022.geojson'
@@ -62,7 +64,7 @@ map.on('load', async () => {
     }
   });
 
-  // —— 5. D3 SVG Overlay 用于 Bluebikes 站点与流量 ——  
+  // —— 5. D3 SVG Overlay for Bluebikes Stations ——  
   const container = map.getCanvasContainer();
   const svg = d3.select(container)
     .append('svg')
@@ -76,8 +78,8 @@ map.on('load', async () => {
 
   const g = svg.append('g');
 
-  // (A) 加载站点 & 流量数据
-  const rawStations = await fetch('https://dsc106.com/labs/lab07/data/bluebikes-stations.json')
+  // (A) 加载站点 & 行程数据
+  const raw = await fetch('https://dsc106.com/labs/lab07/data/bluebikes-stations.json')
     .then(r => r.ok ? r.json() : Promise.reject('stations.json 404'));
   const trips = await d3.csv(
     'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv',
@@ -88,69 +90,74 @@ map.on('load', async () => {
     }
   );
 
-  // (B) 辅助：计算当日分钟数
-  function minutesSinceMidnight(d) {
-    return d.getHours() * 60 + d.getMinutes();
+  // (B) 工具函数：计算自午夜以来的分钟数
+  function minutesSinceMidnight(date) {
+    return date.getHours() * 60 + date.getMinutes();
   }
 
-  // (C) 按时间过滤 trips（±60 分钟窗口）
-  function filterTripsByTime(trips, t) {
-    if (t === -1) return trips;
-    return trips.filter(trip => {
-      const s = minutesSinceMidnight(trip.started_at);
-      const e = minutesSinceMidnight(trip.ended_at);
-      return Math.abs(s - t) <= 60 || Math.abs(e - t) <= 60;
-    });
+  // (C) 构建 1440 桶：按分钟分桶
+  const departuresByMinute = Array.from({ length: 1440 }, () => []);
+  const arrivalsByMinute   = Array.from({ length: 1440 }, () => []);
+  trips.forEach(trip => {
+    const s = minutesSinceMidnight(trip.started_at);
+    const e = minutesSinceMidnight(trip.ended_at);
+    departuresByMinute[s].push(trip);
+    arrivalsByMinute  [e].push(trip);
+  });
+
+  // (D) 根据桶快速筛选 ±60 分钟内的行程
+  function filterByMinute(tripsByMinute, minute) {
+    if (minute === -1) return tripsByMinute.flat();
+    const minM = (minute - 60 + 1440) % 1440;
+    const maxM = (minute + 60) % 1440;
+    if (minM > maxM) {
+      return tripsByMinute
+        .slice(minM)
+        .concat(tripsByMinute.slice(0, maxM))
+        .flat();
+    }
+    return tripsByMinute.slice(minM, maxM).flat();
   }
 
-  // (D) 计算每个 station 的 departures/arrivals/totalTraffic
-  function computeStationTraffic(stations, tripsSubset) {
-    const depRoll = d3.rollup(tripsSubset, v => v.length, d => d.start_station_id);
-    const arrRoll = d3.rollup(tripsSubset, v => v.length, d => d.end_station_id);
+  // (E) 计算每个站点的到离次数及总流量
+  function computeStationTraffic(stations, timeFilter = -1) {
+    const depTrips = filterByMinute(departuresByMinute, timeFilter);
+    const arrTrips = filterByMinute(arrivalsByMinute,   timeFilter);
+    const depRoll = d3.rollup(depTrips, v => v.length, d => d.start_station_id);
+    const arrRoll = d3.rollup(arrTrips, v => v.length, d => d.end_station_id);
     return stations.map(s => {
       const d = depRoll.get(s.short_name) ?? 0;
       const a = arrRoll.get(s.short_name) ?? 0;
-      return {
-        ...s,
-        departures:   d,
-        arrivals:     a,
-        totalTraffic: d + a
-      };
+      return { ...s, departures: d, arrivals: a, totalTraffic: d + a };
     });
   }
 
-  // (E) 初始 stations 数组（包含 short_name, lon, lat）
-  const stations = rawStations.data.stations.map(s => ({
+  // (F) 构造 station 对象（包含 short_name, lon, lat）
+  const stations = raw.data.stations.map(s => ({
     short_name: s.short_name,
     lon:        +s.lon,
     lat:        +s.lat
   }));
 
-  // (F) 构造 sqrt 比例尺（domain 固定，range 动态）
-  const initTraffic = computeStationTraffic(stations, trips);
-  const maxInit = d3.max(initTraffic, d => d.totalTraffic);
-  const radiusScale = d3.scaleSqrt()
-    .domain([0, maxInit]);
-
-  // (G) 经纬度 → 像素
+  // (G) 比例尺 & 投影函数
+  const initTraffic = computeStationTraffic(stations, -1);
+  const maxInit     = d3.max(initTraffic, d => d.totalTraffic);
+  const radiusScale = d3.scaleSqrt().domain([0, maxInit]);
   function project(d) {
     return map.project([d.lon, d.lat]);
   }
 
-  // (H) 更新并渲染 scatter
+  // (H) 渲染函数：根据当前筛选绘制/更新 circles
   let currentFilter = -1;
-  function updateScatterPlot(t) {
-    currentFilter = t;
-    // 调整 range：无过滤用小点，有过滤用大点
-    radiusScale.range(t === -1 ? [0, 25] : [3, 50]);
+  function updateScatterPlot(timeFilter) {
+    currentFilter = timeFilter;
+    // 动态调整 range：无过滤小点，有过滤大点
+    radiusScale.range(timeFilter === -1 ? [0, 25] : [3, 50]);
 
-    // 1) 筛选 trips & 重新计算站点流量
-    const filteredTrips   = filterTripsByTime(trips, t);
-    const filteredStations = computeStationTraffic(stations, filteredTrips);
+    const updatedStations = computeStationTraffic(stations, timeFilter);
 
-    // 2) 绑定数据并 join
     g.selectAll('circle')
-      .data(filteredStations, d => d.short_name)
+      .data(updatedStations, d => d.short_name)
       .join(
         enter => enter.append('circle')
           .attr('fill','steelblue')
@@ -166,27 +173,22 @@ map.on('load', async () => {
           .attr('cy', d => project(d).y),
         exit => exit.remove()
       )
-      // 3) 为每个 circle 加纯文本 <title>
       .each(function(d) {
         d3.select(this).selectAll('title').remove();
         d3.select(this)
           .append('title')
-          .text(
-            `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`
-          );
+          .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
       });
   }
 
-  // (I) Map 移动时重新定位 circles
+  // 绑定地图移动时保持位置同步
   map.on('move',    () => updateScatterPlot(currentFilter));
   map.on('moveend', () => updateScatterPlot(currentFilter));
 
-  // —— Step 5.2 & 5.3: 滑块交互与 time display ——  
-  function formatTime(minutes) {
-    const dt = new Date(0,0,0,0,minutes);
-    return dt.toLocaleString('en-US',{timeStyle:'short'});
+  // —— 6. 滑块交互 & Time Display ——  
+  function formatTime(m) {
+    return new Date(0,0,0,0,m).toLocaleString('en-US',{timeStyle:'short'});
   }
-
   const timeSlider   = document.getElementById('time-slider');
   const selectedTime = document.getElementById('selected-time');
   const anyTimeLabel = document.getElementById('any-time');
@@ -203,8 +205,6 @@ map.on('load', async () => {
     updateScatterPlot(t);
   }
   timeSlider.addEventListener('input', updateTimeDisplay);
-
-  // 初始渲染
   updateTimeDisplay();
 });
 
@@ -219,6 +219,10 @@ function toggle(chkId, layerId) {
       );
     });
 }
-toggle('chk-bos',  'bike-bos-2022');
-toggle('chk-cam',  'bike-cam');
-toggle('chk-blue','bluebikes-circle');
+toggle('chk-bos','bike-bos-2022');
+toggle('chk-cam','bike-cam');
+// Toggle for Bluebikes SVG overlay
+document.getElementById('chk-blue').addEventListener('change', e => {
+  const svg = document.querySelector('svg.overlay');
+  if (svg) svg.style.display = e.target.checked ? 'block' : 'none';
+});
