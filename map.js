@@ -18,7 +18,6 @@ const map = new mapboxgl.Map({
 });
 
 map.on('load', async () => {
-
   // —— 4. 图层：Boston 与 Cambridge 自行车道 ——  
   map.addSource('bos_lanes_2022', {
     type: 'geojson',
@@ -79,7 +78,7 @@ map.on('load', async () => {
 
   const g = svg.append('g');
 
-  // (2) 加载站点数据并初始化属性
+  // 加载站点数据
   const rawStations = await fetch('https://dsc106.com/labs/lab07/data/bluebikes-stations.json')
     .then(r => r.ok ? r.json() : Promise.reject('stations.json 404'));
   const stations = rawStations.data.stations.map(s => ({
@@ -91,7 +90,7 @@ map.on('load', async () => {
     totalTraffic: 0
   }));
 
-  // (3) 加载并解析流量 CSV
+  // 加载并解析流量 CSV
   const trips = await d3.csv(
     'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv',
     d => {
@@ -101,7 +100,7 @@ map.on('load', async () => {
     }
   );
 
-  // (4) 统计函数
+  // 更新 stations 流量统计
   function updateStats(filteredTrips) {
     const dep = d3.rollup(filteredTrips, v => v.length, d => d.start_station_id);
     const arr = d3.rollup(filteredTrips, v => v.length, d => d.end_station_id);
@@ -113,18 +112,18 @@ map.on('load', async () => {
   }
   updateStats(trips);
 
-  // (5) 比例尺
+  // 构造比例尺
   const maxTraffic   = d3.max(stations, st => st.totalTraffic);
   const radiusScale  = d3.scaleSqrt()
     .domain([0, maxTraffic])
     .range([0, 25]);
 
-  // (6) 投影
+  // 经纬度 → 像素
   function project(d) {
     return map.project([d.lon, d.lat]);
   }
 
-  // (7) 渲染并添加 <title>
+  // 渲染函数：绘制/更新 circles 并添加纯文本 title
   function render() {
     const u = g.selectAll('circle')
       .data(stations, d => d.station_id);
@@ -145,11 +144,9 @@ map.on('load', async () => {
       exit => exit.remove()
     );
 
-    // —— 在 render 里移除旧的<title>并重新添加纯文本tooltip —— 
+    // 添加/更新每个 circle 的 <title>
     g.selectAll('circle').each(function(d) {
-      // 先清除旧的
       d3.select(this).selectAll('title').remove();
-      // 再添加新的<title>
       d3.select(this)
         .append('title')
         .text(
@@ -158,12 +155,29 @@ map.on('load', async () => {
     });
   }
 
-  // 初始渲染 & 绑定地图事件
+  // 初始渲染 & 绑定 Map 事件
   render();
   map.on('move', render);
   map.on('moveend', render);
 
-  // —— 6. 滑块交互（Step 5） ——  
+  // —— 6. 滑块交互（±60 分钟窗口） ——  
+
+  // 把 Date 转成当天分钟数
+  function minutesSinceMidnight(date) {
+    return date.getHours() * 60 + date.getMinutes();
+  }
+
+  // 过滤：只保留出发/到达在 [t-60, t+60] 分钟内的 trips
+  function filterTripsByTime(trips, t) {
+    if (t === -1) return trips;
+    return trips.filter(trip => {
+      const s = minutesSinceMidnight(trip.started_at);
+      const e = minutesSinceMidnight(trip.ended_at);
+      return Math.abs(s - t) <= 60 || Math.abs(e - t) <= 60;
+    });
+  }
+
+  // 格式化显示时间
   function formatTime(minutes) {
     const d = new Date(0,0,0,0,minutes);
     return d.toLocaleString('en-US',{timeStyle:'short'});
@@ -183,19 +197,12 @@ map.on('load', async () => {
       anyTimeLabel.style.display = 'none';
     }
 
-    const filtered = t < 0
-      ? trips
-      : trips.filter(trip => {
-          const mins = trip.started_at.getHours() * 60
-                     + trip.started_at.getMinutes();
-          return mins <= t;
-        });
-
+    const filtered = filterTripsByTime(trips, t);
     updateStats(filtered);
     render();
   });
 
-  // 初始触发一次
+  // 触发一次初始渲染
   timeSlider.dispatchEvent(new Event('input'));
 
 }); // end map.on('load')
